@@ -1,0 +1,11 @@
+# MySQL Database Configuration
+DB_HOST=localhost
+DB_PORT=3306
+DB_USER=my_database_user
+DB_PASSWORD=my_database_password
+DB_NAME=my_database_name
+# Wordpress Configuration
+WORDPRESS_SITE=https://yourwordpresssite.com
+WORDPRESS_USERNAME=your_username
+WORDPRESS_PASSWORD=your_password
+POST_TO_WP=FALSE
