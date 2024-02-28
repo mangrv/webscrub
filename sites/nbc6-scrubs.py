@@ -4,83 +4,76 @@ from selenium.webdriver.chrome.service import Service
 from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.chrome.options import Options
 import time
-import os
 import datetime
-import mysql.connector
-from mysql.connector import Error
-from dotenv import load_dotenv
+import os
 
-# Load environment variables from .env file
-load_dotenv()
-
-# Database connection parameters
-db_config = {
-    'host': os.getenv('DB_HOST'),
-    'user': os.getenv('DB_USER'),
-    'password': os.getenv('DB_PASSWORD'),
-    'database': os.getenv('DB_NAME')
-}
-
-# Function to connect to the database
-def connect_to_db(config):
-    try:
-        connection = mysql.connector.connect(**config)
-        if connection.is_connected():
-            return connection
-    except Error as e:
-        print(f"Error connecting to database: {e}")
-        return None
-
-# Check if an article already exists based on its canonical URL
-def check_article_exists(connection, canonical_url):
-    cursor = connection.cursor()
-    query = "SELECT COUNT(*) FROM articles WHERE canonical_url = %s"
-    cursor.execute(query, (canonical_url,))
-    (count,) = cursor.fetchone()
-    return count > 0
-
-# Insert a new article into the database
-def insert_article(db_connection, title, author, publish_date, content, canonical_url):
-    cursor = db_connection.cursor()
-    query = """
-    INSERT INTO articles (title, author, publish_date, content, canonical_url)
-    VALUES (%s, %s, %s, %s, %s)
-    """
-    cursor.execute(query, (title, author, publish_date, content, canonical_url))
-    db_connection.commit()
-
-# Selenium setup
+# Setup Chrome options
 chrome_options = Options()
-chrome_options.add_argument("--headless")
-chrome_options.add_argument("--disable-notifications")
+chrome_options.add_argument("--headless")  # Run headless if you don't need a browser UI
+chrome_options.add_argument("--disable-notifications")  # Disable browser notifications
+
+# Set path to chromedriver as per your configuration
 webdriver_service = Service(ChromeDriverManager().install())
+
+# Choose Chrome Browser
 driver = webdriver.Chrome(service=webdriver_service, options=chrome_options)
 
-# Your existing web scraping functions here
-# - get_article_details(driver, url)
-# - get_links(driver, url)
+# Specify output directory
+output_dir = 'sites/output'
+os.makedirs(output_dir, exist_ok=True)  # Creates the directory if it does not exist
 
+# Function to get post content from a single page
+def get_post_content(driver, url):
+    driver.get(url)
+    time.sleep(3)  # Sleep to allow the page to load.
+    try:
+        # Generate a unique filename for each URL
+        timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
+        filename = f"{output_dir}/content_{timestamp}.txt"
+
+        # Extracting specific details
+        post_title = driver.find_element(By.CSS_SELECTOR, 'h1.article-headline--title').text
+        post_excerpt = driver.find_element(By.CSS_SELECTOR, 'h2.article-headline--subheadline').text
+        post_image = driver.find_element(By.CSS_SELECTOR, 'div.article-branding img').get_attribute('src') if driver.find_elements(By.CSS_SELECTOR, 'div.article-branding img') else 'No image found'
+        publish_date = driver.find_element(By.CSS_SELECTOR, 'div.article-headline--publish-date.border-left').text
+        author = driver.find_element(By.CSS_SELECTOR, 'div.article-byline--details-author').text
+        post_content = driver.find_element(By.CSS_SELECTOR, 'div.article-content--body-text').text
+
+        with open(filename, 'w', encoding='utf-8') as file:
+            file.write(f"Post Title: {post_title}\n")
+            file.write(f"Post Excerpt: {post_excerpt}\n")
+            file.write(f"Post Image URL: {post_image}\n")
+            file.write(f"Publish Date: {publish_date}\n")
+            file.write(f"Author: {author}\n")
+            file.write(f"Post Content: {post_content}\n\n")
+
+            file.write("Full HTML:\n")
+            file.write(driver.page_source)
+
+    except Exception as e:
+        print(f"An error occurred while trying to get the content of {url}: {e}")
+
+# Function to get links from website
+def get_links(driver, url):
+    driver.get(url)
+    time.sleep(5)  # Sleep for 5 seconds to allow the page to load.
+    posts = driver.find_elements(By.XPATH, "//a[contains(@class, 'feed-item-title')]")
+    links = []
+    for post in posts:
+        href = post.get_attribute('href')
+        if href:
+            link = href if href.startswith('http') else f"https://www.nbc-2.com{href}"
+            links.append(link)
+    return links
+
+# Main process
 if __name__ == "__main__":
-    db_connection = connect_to_db(db_config)
-    if not db_connection:
-        print("Failed to connect to the database. Exiting...")
-        exit()
+    target_url = 'https://www.nbc-2.com/local-news/'
+    found_links = get_links(driver, target_url)
 
-    target_url = 'https://www.example.com/'  # Your target URL
-    links = get_links(driver, target_url)
+    for link in found_links:
+        print(f"Extracting content from {link}")
+        get_post_content(driver, link)
+        print("----------------------------------------------------\n")
 
-    if links:
-        for index, link in enumerate(links):
-            title, author_name, publish_date, excerpt, content_html, full_html_content, canonical_url = get_article_details(driver, link)
-            if not check_article_exists(db_connection, canonical_url):
-                # Only insert if the article doesn't already exist
-                insert_article(db_connection, title, author_name, publish_date, content_html, canonical_url)
-                print(f"Article inserted: {title}")
-            else:
-                print(f"Article already exists, skipping: {title}")
-    else:
-        print("No article links found.")
-    
     driver.quit()
-    if db_connection.is_connected():
-        db_connection.close()
