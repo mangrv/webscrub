@@ -38,6 +38,8 @@ def get_post_content(driver, url):
         publish_date = driver.find_element(By.CSS_SELECTOR, 'div.article-headline--publish-date.border-left').text
         author = driver.find_element(By.CSS_SELECTOR, 'div.article-byline--details-author').text
         post_content = driver.find_element(By.CSS_SELECTOR, 'div.article-content--body-text').text
+        canonical_div = driver.find_element(By.CSS_SELECTOR, 'div.article-content')
+        canonical_url = canonical_div.get_attribute('data-canonical-url')
 
         with open(filename, 'w', encoding='utf-8') as file:
             file.write(f"Post Title: {post_title}\n")
@@ -45,7 +47,8 @@ def get_post_content(driver, url):
             file.write(f"Post Image URL: {post_image}\n")
             file.write(f"Publish Date: {publish_date}\n")
             file.write(f"Author: {author}\n")
-            file.write(f"Post Content: {post_content}\n\n")
+            file.write(f"Post Content: {post_content}\n")
+            file.write(f"Canonical URL: {canonical_url}\n\n")
 
             file.write("Full HTML:\n")
             file.write(driver.page_source)
