@@ -6,6 +6,7 @@ from selenium.webdriver.chrome.options import Options
 import time
 import datetime
 import os
+from dateutil import parser
 
 # Setup Chrome options
 chrome_options = Options()
@@ -41,11 +42,17 @@ def get_post_content(driver, url):
         canonical_div = driver.find_element(By.CSS_SELECTOR, 'div.article-content')
         canonical_url = canonical_div.get_attribute('data-canonical-url')
 
+        # New: Process publish_date to fit MariaDB datetime format
+        # Assuming publish_date is in the format "Updated: HH:MM AM/PM EST Month DD, YYYY"
+        # We strip the prefix "Updated: " and timezone "EST" to parse the datetime
+        formatted_date = publish_date.replace('Updated: ', '').replace(' EST', '')
+        formatted_date = parser.parse(formatted_date).strftime('%Y-%m-%d %H:%M:%S')
+
         with open(filename, 'w', encoding='utf-8') as file:
             file.write(f"Post Title: {post_title}\n")
             file.write(f"Post Excerpt: {post_excerpt}\n")
             file.write(f"Post Image URL: {post_image}\n")
-            file.write(f"Publish Date: {publish_date}\n")
+            file.write(f"Publish Date: {formatted_date}\n")  # Updated to use the new format
             file.write(f"Author: {author}\n")
             file.write(f"Post Content: {post_content}\n")
             file.write(f"Canonical URL: {canonical_url}\n\n")
