@@ -4,7 +4,7 @@ WebScrub Project
 Description
 -----------
 
-The WebScrub Project is designed to aggregate local news articles by scraping websites that do not offer an RSS feed. This project currently focuses on NBC-2 local news but can be extended to include other sources. It uses Python with libraries such as Requests, BeautifulSoup4, and Selenium for web scraping.
+The WebScrub Project is designed to aggregate local news articles by scraping websites that do not offer an RSS feed. This project currently focuses on NBC-2 local news but can be extended to include other sources. It utilizes Python with libraries such as Requests, BeautifulSoup4, and Selenium for web scraping, alongside MySQL for database operations.
 
 Installation
 ------------
@@ -13,14 +13,24 @@ Installation
 
 *   Python 3.x
 *   pip (Python package manager)
+*   MySQL Server (for database storage)
 
 ### Libraries Installation
 
-Run the following command to install the necessary libraries:
+Run the following command to install the necessary Python libraries:
 
-    pip install requests beautifulsoup4 selenium
+    pip install requests beautifulsoup4 selenium mysql-connector-python
 
 **Note:** If you plan to use Selenium, you will also need to download a WebDriver for the browser you intend to use (e.g., ChromeDriver for Google Chrome, geckodriver for Firefox). Please refer to the Selenium documentation for instructions on installing and setting up WebDriver.
+
+### MySQL Database Setup
+
+Ensure MySQL Server is installed and running. Create a database and user for the WebScrub Project with the necessary permissions:
+
+    CREATE DATABASE webscrub;
+    CREATE USER 'webscrub_user'@'localhost' IDENTIFIED BY 'your_password';
+    GRANT ALL PRIVILEGES ON webscrub.* TO 'webscrub_user'@'localhost';
+    FLUSH PRIVILEGES;
 
 ### Clone the Repository
 
@@ -32,7 +42,7 @@ To get started with the WebScrub project, clone the repository to your local mac
 Configuration
 -------------
 
-Before running the script, ensure you have configured the necessary parameters inside the script. This may include setting up the target URL, configuring the WebDriver path for Selenium, and any other site-specific configurations.
+Before running the script, ensure you have configured the necessary parameters inside the script. This includes setting up the target URL, configuring the WebDriver path for Selenium, database connection details, and any other site-specific configurations.
 
 Running the Script
 ------------------
