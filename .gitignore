@@ -137,5 +137,4 @@ cython_debug/
 output/
 
 #mac files
-.dstore
 .DS_Store
