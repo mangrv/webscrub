@@ -56,15 +56,17 @@ class DatabaseManager:
             self.connection.close()
             logging.info("Database connection closed.")
 
-    def update_is_published_flag(self, canonical_url):
+    def update_post_publish_status(self, canonical_url, wordpress_url):
         try:
             cursor = self.connection.cursor()
-            query = "UPDATE articles SET is_published_to_wordpress = 1 WHERE canonical_url = %s"
-            cursor.execute(query, (canonical_url,))
+            query = """UPDATE articles SET is_published_to_wordpress = %s, wordpress_url = %s WHERE canonical_url = %s"""
+            cursor.execute(query, (1, wordpress_url, canonical_url))
             self.connection.commit()
-            logging.info(f"Updated is_published_to_wordpress flag for {canonical_url}")
+            logging.info(f"Post publish status and WordPress URL updated for {canonical_url}")
         except Error as e:
-            logging.error(f"Error while updating is_published_to_wordpress flag: {e}")
+            logging.error(f"Failed to update post publish status: {e}")
+        finally:
+            cursor.close()
 
 class WordPressManager:
     def __init__(self):
@@ -77,23 +79,7 @@ class WordPressManager:
         credentials = f"{self.wordpress_username}:{self.wordpress_password}"
         token = base64.b64encode(credentials.encode()).decode("utf-8")
         return {"Authorization": f"Basic {token}"}
-
-    def upload_image_to_wordpress(self, image_url):
-        if not image_url:
-            return None
-        media_endpoint = f"{self.wordpress_site}/wp-json/wp/v2/media"
-        headers = self.get_basic_auth_header()
-        headers.update({
-            "Content-Disposition": f"attachment; filename={os.path.basename(image_url)}",
-            "Content-Type": "image/jpeg"
-        })
-        image_data = requests.get(image_url).content
-        response = requests.post(media_endpoint, headers=headers, data=image_data)
-        if response.status_code == 201:
-            return response.json()['id']
-        logging.error(f"Failed to upload image to WordPress: {response.status_code}, {response.text}")
-        return None
-
+    
     def publish_post(self, post_details):
         headers = self.get_basic_auth_header()
         # Set the category and tag IDs
@@ -110,24 +96,29 @@ class WordPressManager:
             "date_gmt": post_details['publish_date'] + 'T00:00:00',  # Ensure the date format is correct
         }
 
-        if 'post_image' in post_details and post_details['post_image']:
-            image_id = self.upload_image_to_wordpress(post_details['post_image'])
+        if 'post_image' in post_details:
+            image_id = self.upload_image_to_wordpress(post_details['post_image'], headers)
             if image_id:
-                post_data["featured_media"] = image_id  # Set the uploaded image as the featured media
+                post_data['featured_media'] = image_id
 
-        publish_endpoint = f"{self.wordpress_site}/wp-json/wp/v2/posts"
-        response = requests.post(publish_endpoint, headers=headers, json=post_data)
+        response = requests.post(f"{self.wordpress_site}/wp-json/wp/v2/posts", headers=headers, json=post_data)
         if response.status_code == 201:
-            post_response = response.json()
-            wp_post_link = post_response.get('link', 'No link available')  # Extract the link to the published post
-            logging.info(f"Post successfully published to WordPress. Title: {post_details['title']}, Link: {wp_post_link}")
-            # Log the category and tag assignment for verification
-            logging.info(f"Assigned to Category 'Local News' (ID: 47), Tag 'NBC2 News' (ID: 223)")
-            return True, wp_post_link  # Return success and the link to the published post
+            wp_post_link = response.json().get('link')
+            logging.info(f"Post successfully published to WordPress: {wp_post_link}")
+            return True, wp_post_link
         else:
             logging.error(f"Failed to publish post to WordPress: {response.status_code}, {response.text}")
-            return False, None  # Indicate failure and return no link
+            return False, None
 
+    def upload_image_to_wordpress(self, image_url, headers):
+        media_endpoint = f"{self.wordpress_site}/wp-json/wp/v2/media"
+        image_data = requests.get(image_url).content
+        files = {'file': ('filename.jpg', image_data, 'image/jpeg')}
+        response = requests.post(media_endpoint, headers=headers, files=files)
+        if response.status_code == 201:
+            return response.json()['id']
+        logging.error("Failed to upload image to WordPress.")
+        return None
 
 class Scraper:
     def __init__(self, driver):
@@ -171,10 +162,12 @@ def main():
         for link in found_links:
             post_details = scraper.get_post_content(link)
             if post_details and wp_manager.post_to_wp:
-                if wp_manager.publish_post(post_details):
-                    db_manager.update_is_published_flag(post_details['canonical_url'])
+                success, wp_post_link = wp_manager.publish_post(post_details)
+                if success:
+                    db_manager.update_post_publish_status(post_details['canonical_url'], wp_post_link)
+                    logging.info(f"Successfully published '{post_details['title']}' to WordPress and updated the database.")
                 else:
-                    logging.error(f"Failed to publish post to WordPress: {post_details['title']}")
+                    logging.error(f"Failed to publish '{post_details['title']}' to WordPress.")
             else:
                 logging.error(f"Failed to scrape or publish content from {link}")
 
