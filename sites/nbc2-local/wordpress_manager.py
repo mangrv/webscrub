@@ -27,9 +27,13 @@ class WordPressManager:
         est_timezone = pytz.timezone('US/Eastern')
         publish_date_est = datetime.now(est_timezone).strftime('%Y-%m-%dT%H:%M:%S')
 
+        # Prepend or append the author's credit to the post content
+        author_credit = f"<p><strong>Author:</strong> {post_details['author']}</p>"
+        post_content_with_author = author_credit + post_details['content']
+        
         post_data = {
             "title": post_details['title'],
-            "content": post_details['content'],
+            "content": post_content_with_author,
             "excerpt": post_details['excerpt'],
             "status": "publish",
             "categories": categories,
