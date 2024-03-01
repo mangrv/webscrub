@@ -25,53 +25,43 @@ def setup_chrome_options():
     return chrome_options
 
 def main():
-    # Initialize and configure Chrome options
     chrome_options = setup_chrome_options()
     service = Service(ChromeDriverManager().install())
     driver = webdriver.Chrome(service=service, options=chrome_options)
 
-    # Initialize the scraper
     scraper = Scraper(driver)
-
-    # Define the target URL for scraping
     target_url = "https://www.nbc-2.com/local-news/"
     logging.info(f"Beginning to scrape links from {target_url}")
     found_links = scraper.get_links(target_url)
 
-    # Initialize WordPressManager with the configuration from config.py
     wp_manager = WordPressManager(Config.WORDPRESS_SITE, Config.WORDPRESS_USERNAME, Config.WORDPRESS_PASSWORD, Config.POST_TO_WP)
-
-    # Initialize DatabaseManager and connect to the database
     db_manager = DatabaseManager(Config.DB_HOST, Config.DB_PORT, Config.DB_USER, Config.DB_PASSWORD, Config.DB_NAME)
     if not db_manager.connect():
         logging.error("Failed to establish database connection.")
         return
 
-    # Iterate through the found links and process them
     for link in found_links:
-        logging.info(f"Processing content from {link}")
-        post_details = scraper.get_post_content(link)
-        if post_details:
-            # Check if posting to WordPress is enabled
-            if wp_manager.post_to_wp:
-                logging.info(f"Publishing to WordPress: {post_details['title']}")
-                success, wp_post_link = wp_manager.publish_post(post_details)
-                if success:
-                    logging.info(f"Published successfully to WordPress. URL: {wp_post_link}")
-                    # Update the post publish status in the database
-                    db_manager.update_post_publish_status(post_details['canonical_url'], wp_post_link)
-                else:
-                    logging.error("Failed to publish to WordPress.")
+        if not db_manager.url_exists(link):
+            logging.info(f"Processing new content from {link}")
+            post_details = scraper.get_post_content(link)
+            if post_details:
+                # Assume there's a method `insert_article` in `DatabaseManager` for inserting the article details.
+                # This method would return True if insertion was successful, False otherwise.
+                if db_manager.insert_article(post_details) and wp_manager.post_to_wp:
+                    logging.info(f"Publishing to WordPress: {post_details['title']}")
+                    success, wp_post_link = wp_manager.publish_post(post_details)
+                    if success:
+                        logging.info(f"Published successfully to WordPress. URL: {wp_post_link}")
+                        db_manager.update_post_publish_status(post_details['canonical_url'], wp_post_link)
+                    else:
+                        logging.error("Failed to publish to WordPress.")
             else:
-                logging.info("Posting to WordPress is disabled.")
+                logging.error(f"Failed to scrape content from {link}")
         else:
-            logging.error(f"Failed to scrape content from {link}")
+            logging.info(f"Skipping already processed content: {link}")
 
-    # Close the database connection
     db_manager.close()
     logging.info("Database connection closed.")
-
-    # Quit the driver
     driver.quit()
     logging.info("Scraping process completed.")
 

@@ -2,6 +2,8 @@ import os
 import requests
 import logging
 import base64
+from datetime import datetime
+import pytz  # Ensure you have pytz installed
 
 class WordPressManager:
     def __init__(self, wordpress_site, wordpress_username, wordpress_password, post_to_wp):
@@ -21,6 +23,10 @@ class WordPressManager:
         categories = [47]  # Example category ID
         tags = [223]  # Example tag ID
 
+        # Adjust the publish date to EST timezone
+        est_timezone = pytz.timezone('US/Eastern')
+        publish_date_est = datetime.now(est_timezone).strftime('%Y-%m-%dT%H:%M:%S')
+
         post_data = {
             "title": post_details['title'],
             "content": post_details['content'],
@@ -28,7 +34,7 @@ class WordPressManager:
             "status": "publish",
             "categories": categories,
             "tags": tags,
-            "date_gmt": post_details['publish_date'] + 'T00:00:00',
+            "date": publish_date_est,  # Use 'date' to specify EST time directly
         }
 
         if 'post_image' in post_details:
