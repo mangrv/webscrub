@@ -19,9 +19,6 @@ def setup_chrome_options():
     chrome_options = Options()
     chrome_options.add_argument("--headless")
     chrome_options.add_argument("--disable-notifications")
-    chrome_options.add_argument('--incognito')
-    chrome_options.add_argument('--no-cache-dir')
-    chrome_options.add_argument('--disable-application-cache')
     return chrome_options
 
 def main():
