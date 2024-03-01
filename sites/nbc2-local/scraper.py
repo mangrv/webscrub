@@ -31,6 +31,8 @@ class Scraper:
             post_details['publish_date'] = datetime.now().strftime('%Y-%m-%d')
             post_details['post_image'] = self.driver.find_element(By.CSS_SELECTOR, 'div.article-branding img').get_attribute('src') if self.driver.find_elements(By.CSS_SELECTOR, 'div.article-branding img') else None
             post_details['canonical_url'] = self.driver.current_url
+            # Extract the author's name
+            post_details['author'] = self.driver.find_element(By.CSS_SELECTOR, 'div.article-byline--details-author').text
             return post_details
         except Exception as e:
             logging.error(f"Failed to scrape content from {url}: {e}")
