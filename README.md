@@ -19,25 +19,28 @@ Installation
 
 Run the following command to install the necessary Python libraries:
 
-    pip install requests beautifulsoup4 selenium mysql-connector-python
+pip install requests beautifulsoup4 selenium mysql-connector-python
 
-**Note:** If you plan to use Selenium, you will also need to download a WebDriver for the browser you intend to use (e.g., ChromeDriver for Google Chrome, geckodriver for Firefox). Please refer to the Selenium documentation for instructions on installing and setting up WebDriver.
+#### Note:
+
+If you plan to use Selenium, you will also need to download a WebDriver for the browser you intend to use (e.g., ChromeDriver for Google Chrome, geckodriver for Firefox). Please refer to the Selenium documentation for instructions on installing and setting up WebDriver.
 
 ### MySQL Database Setup
 
 Ensure MySQL Server is installed and running. Create a database and user for the WebScrub Project with the necessary permissions:
 
-    CREATE DATABASE webscrub;
-    CREATE USER 'webscrub_user'@'localhost' IDENTIFIED BY 'your_password';
-    GRANT ALL PRIVILEGES ON webscrub.* TO 'webscrub_user'@'localhost';
-    FLUSH PRIVILEGES;
+CREATE DATABASE webscrub;
+CREATE USER 'webscrub\_user'@'localhost' IDENTIFIED BY 'your\_password';
+GRANT ALL PRIVILEGES ON webscrub.\* TO 'webscrub\_user'@'localhost';
+FLUSH PRIVILEGES;
+    
 
 ### Clone the Repository
 
 To get started with the WebScrub project, clone the repository to your local machine:
 
-    git clone https://github.com/mangrv/webscrub.git
-    cd webscrub
+git clone https://github.com/mangrv/webscrub.git
+cd webscrub
 
 Configuration
 -------------
@@ -49,9 +52,9 @@ Running the Script
 
 To run the script, navigate to the project directory and execute the following command:
 
-    python3 nbc6-scrubs.py
+python main.py
 
-Replace `nbc6-scrubs.py` with the script you wish to run. The script will fetch the latest news articles from the configured sources and display or store them according to the script's functionality.
+Replace \`main.py\` with the script you wish to run. The script will fetch the latest news articles from NBC2 and display or store them according to the script's functionality.
 
 Contributing
 ------------
@@ -61,7 +64,12 @@ Contributions to the WebScrub project are welcome. Please feel free to fork the 
 Credits
 -------
 
-This project was created by the WebScrub team. We thank all contributors for their valuable inputs and feedback.
+Credits to the following dependencies and their respective teams for making the WebScrub project possible:
+
+*   Requests: HTTP library for Python, allows sending HTTP/1.1 requests
+*   BeautifulSoup4: Library for parsing HTML and XML documents
+*   Selenium: Tool for automating web browsers
+*   MySQL Connector/Python: Self-contained Python driver for communicating with MySQL servers
 
 License
 -------
