@@ -52,9 +52,9 @@ Running the Script
 
 To run the script, navigate to the project directory and execute the following command:
 
-python3 nbc6-scrubs.py
+python main.py
 
-Replace \`nbc6-scrubs.py\` with the script you wish to run. The script will fetch the latest news articles from the configured sources and display or store them according to the script's functionality.
+Replace \`main.py\` with the script you wish to run. The script will fetch the latest news articles from NBC2 and display or store them according to the script's functionality.
 
 Contributing
 ------------
