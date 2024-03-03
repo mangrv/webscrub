@@ -20,8 +20,8 @@ class WordPressManager:
     def publish_post(self, post_details):
         headers = self.get_basic_auth_header()
         # Set the category and tag IDs
-        categories = [47]  # Example category ID
-        tags = [223]  # Example tag ID
+        categories = [239]  # Example category ID
+        tags = [238]  # Example tag ID
 
         # Adjust the publish date to EST timezone
         est_timezone = pytz.timezone('US/Eastern')
