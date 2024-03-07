@@ -1,3 +1,5 @@
+#wordpress_manager.py
+
 import os
 import requests
 import logging
@@ -10,7 +12,7 @@ class WordPressManager:
         self.wordpress_site = wordpress_site
         self.wordpress_username = wordpress_username
         self.wordpress_password = wordpress_password
-        self.post_to_wp = post_to_wp
+        self.post_to_wp = post_to_wp  # This controls whether posts are submitted to WordPress
 
     def get_basic_auth_header(self):
         credentials = f"{self.wordpress_username}:{self.wordpress_password}"
@@ -18,6 +20,13 @@ class WordPressManager:
         return {"Authorization": f"Basic {token}"}
 
     def publish_post(self, post_details):
+        logging.info(f"Publishing post: {post_details['title']}, Image URL: {post_details.get('post_image')}")
+
+        # Check if posting to WordPress is enabled
+        if not self.post_to_wp:
+            logging.info("Posting to WordPress is disabled via configuration. Operation aborted.")
+            return False, "Posting to WordPress is disabled"
+
         headers = self.get_basic_auth_header()
         # Set the category and tag IDs
         categories = [239]  # Example category ID
@@ -38,13 +47,15 @@ class WordPressManager:
             "status": "publish",
             "categories": categories,
             "tags": tags,
-            "date": publish_date_est,  # Use 'date' to specify EST time directly
+            "date": publish_date_est,
         }
 
-        if 'post_image' in post_details:
+        # Proceed with checking if post_image exists and is not None
+        if 'post_image' in post_details and post_details['post_image']:
             image_id = self.upload_image_to_wordpress(post_details['post_image'], headers)
             if image_id:
                 post_data['featured_media'] = image_id
+
 
         response = requests.post(f"{self.wordpress_site}/wp-json/wp/v2/posts", headers=headers, json=post_data)
         if response.status_code == 201:

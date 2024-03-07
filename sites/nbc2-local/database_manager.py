@@ -1,3 +1,4 @@
+#data_manager.py
 import mysql.connector
 from mysql.connector import Error
 import logging
@@ -12,7 +13,6 @@ class DatabaseManager:
         self.connection = None
 
     def connect(self):
-        """Establish a connection to the database."""
         try:
             self.connection = mysql.connector.connect(
                 host=self.db_host,
@@ -29,11 +29,7 @@ class DatabaseManager:
             return False
 
     def url_exists(self, canonical_url):
-        """Check if the given URL already exists in the database."""
-        if not self.connection or not self.connection.is_connected():
-            logging.error("Database connection is not established.")
-            return False
-
+        cursor = None
         try:
             cursor = self.connection.cursor()
             query = "SELECT EXISTS(SELECT 1 FROM articles WHERE canonical_url = %s)"
@@ -47,58 +43,62 @@ class DatabaseManager:
                 cursor.close()
 
     def insert_article(self, article_details):
-        """Insert a new article into the database."""
-        if not self.connection or not self.connection.is_connected():
-            logging.error("Database connection is not established.")
-            return False
-
+        cursor = None
         try:
             cursor = self.connection.cursor()
-            query = """INSERT INTO articles (title, author, publish_date, content, excerpt, canonical_url, post_image, is_published_to_wordpress, wordpress_url)
-                       VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)"""
+            query = """INSERT INTO articles (title, author, publish_date, content, excerpt, canonical_url, post_image, source)
+                       VALUES (%s, %s, %s, %s, %s, %s, %s, %s)"""
             cursor.execute(query, (
                 article_details['title'],
-                article_details.get('author', ''),
-                article_details.get('publish_date', None),
+                article_details['author'],
+                article_details['publish_date'],
                 article_details['content'],
-                article_details.get('excerpt', ''),
+                article_details['excerpt'],
                 article_details['canonical_url'],
-                article_details.get('post_image', ''),
-                0,
-                ''
+                article_details['post_image'],
+                article_details['source']  # This assumes 'source' is a part of article_details
             ))
             self.connection.commit()
             logging.info(f"Article inserted into database: {article_details['title']}")
-            return True
         except Error as e:
             logging.error(f"Failed to insert article into database: {e}")
-            return False
         finally:
             if cursor:
                 cursor.close()
 
-    def update_post_publish_status(self, canonical_url, wordpress_url):
-        """Update the post publish status and WordPress URL for an article."""
-        if not self.connection or not self.connection.is_connected():
-            logging.error("Database connection is not established.")
-            return False
+    def fetch_articles_to_publish(self):
+        """Retrieve articles that have not been published to WordPress."""
+        cursor = None
+        articles_to_publish = []
+        try:
+            cursor = self.connection.cursor(dictionary=True)
+            query = "SELECT * FROM articles WHERE is_published_to_wordpress = 0"
+            cursor.execute(query)
+            articles_to_publish = cursor.fetchall()
+        except Error as e:
+            logging.error(f"Failed to retrieve unpublished articles: {e}")
+        finally:
+            if cursor:
+                cursor.close()
+        return articles_to_publish
 
+    def mark_article_as_published(self, canonical_url, wp_post_link):
+        """Mark the article as published to WordPress in the database."""
+        cursor = None
         try:
             cursor = self.connection.cursor()
-            query = "UPDATE articles SET is_published_to_wordpress = %s, wordpress_url = %s WHERE canonical_url = %s"
-            cursor.execute(query, (1, wordpress_url, canonical_url))
+            query = """UPDATE articles SET is_published_to_wordpress = 1, wordpress_url = %s
+                       WHERE canonical_url = %s"""
+            cursor.execute(query, (wp_post_link, canonical_url))
             self.connection.commit()
-            logging.info(f"Post publish status and WordPress URL updated for {canonical_url}")
-            return True
+            logging.info(f"Article marked as published: {canonical_url}")
         except Error as e:
-            logging.error(f"Failed to update post publish status: {e}")
-            return False
+            logging.error(f"Failed to mark article as published: {e}")
         finally:
             if cursor:
                 cursor.close()
 
     def close(self):
-        """Close the database connection."""
         if self.connection and self.connection.is_connected():
             self.connection.close()
             logging.info("Database connection closed.")
