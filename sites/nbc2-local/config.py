@@ -1,10 +1,11 @@
+# config.py
 import os
 from dotenv import load_dotenv
 
 # Load the .env file
 load_dotenv()
 
-# Define a class or functions to access environment variables
+# Define a class to access environment variables
 class Config:
     DB_HOST = os.getenv("DB_HOST")
     DB_PORT = int(os.getenv("DB_PORT", 3306))
