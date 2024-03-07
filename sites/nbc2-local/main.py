@@ -21,6 +21,8 @@ def setup_chrome_options():
     chrome_options.add_argument('--incognito')
     chrome_options.add_argument('--no-sandbox')
     chrome_options.add_argument('--disable-gpu')
+    chrome_options.add_argument('--no-cache-dir')
+    chrome_options.add_argument('--disable-application-cache')
     return chrome_options
 
 def scheduled_scraper_and_publish_task():
