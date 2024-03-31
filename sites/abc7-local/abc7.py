@@ -27,14 +27,13 @@ driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), opti
 # Function to extract and save news links, titles, and post images
 def extract_news_links_titles_images(url):
     elements = driver.find_elements(By.CSS_SELECTOR, "div.grid-content.article[data-content-url][data-content-title][data-subsection='local-news']")
-    news_items = []  # Use a list to maintain order
+    news_items = [] 
     for element in elements:
         link = element.get_attribute('data-content-url')
         title = element.get_attribute('data-content-title')
         post_image = element.find_element(By.CSS_SELECTOR, ".image").get_attribute('style')
-        if link and title:  # Ensure both link and title are present
+        if link and title: 
             full_link = f"https://www.abc-7.com{link}" if not link.startswith('http') else link
-            # Extract the image URL from style attribute
             image_url = post_image.split("url(")[-1].split(")")[0]
             news_items.append((title, full_link, image_url))
     return news_items
@@ -42,7 +41,7 @@ def extract_news_links_titles_images(url):
 def extract_article_details(news_items, save_to_strapi=False):
     for index, (title, link, post_image) in enumerate(news_items):
         driver.get(link)
-        time.sleep(5)  # Wait for dynamic content
+        time.sleep(5)
 
         # Initialize the clean_html_content variable
         clean_html_content = ""
@@ -66,6 +65,22 @@ def extract_article_details(news_items, save_to_strapi=False):
             content_body += el.get_attribute('innerHTML')
             clean_html_content += el.get_attribute('outerHTML')
 
+            
+        # Extract clean HTML content, excluding sections with advertisements
+        content_body_elements = driver.find_elements(By.CSS_SELECTOR, ".article-content--body-text, .article-content--body-text-raw")
+        for el in content_body_elements:
+            # Convert WebElement to a BeautifulSoup object
+            soup = BeautifulSoup(el.get_attribute('outerHTML'), 'html.parser')
+                
+            # Remove any ad sections
+            ads = soup.find_all(class_="ad-rectangle")
+            for ad in ads:
+                ad.decompose()
+
+            # Check if after removing ads, the element still contains meaningful content
+            if soup.text.strip():
+                clean_html_content += str(soup) + "\n\n"
+                
         # Extract publish date
         publish_date_elements = driver.find_elements(By.CSS_SELECTOR, ".article-headline--publish-date")
         publish_date = publish_date_elements[0].text if publish_date_elements else "No publish date found"
@@ -76,6 +91,7 @@ def extract_article_details(news_items, save_to_strapi=False):
             "Author Name": author_name,
             "Excerpt": excerpt,
             "Content Body": content_body,
+            "Clean Content": clean_html_content,
             "Publish Date": publish_date
         }
 
@@ -87,14 +103,8 @@ def extract_article_details(news_items, save_to_strapi=False):
             file.write(f"Excerpt: {excerpt}\n")
             file.write(f"Publish Date: {publish_date}\n")
             file.write(f"URL: {link}\n")
-            file.write(f"Post Content:\n\n")  # Add label for post content
+            file.write(f"Post Content:\n\n")
             file.write(content_body)
-
-            file.write("\n\n" + "-"*80 + "\n")
-            file.write("CLEAN HTML CONTENT BELOW (No Advertisements)\n")
-            file.write("-"*80 + "\n\n")
-            
-            # Writing the clean HTML
             file.write(clean_html_content)
             print(f"Content for {title} saved to {filename}")
 
@@ -102,9 +112,6 @@ def extract_article_details(news_items, save_to_strapi=False):
             push_to_strapi(title, author_name, excerpt, content_body, publish_date, link, post_image)
 
 def push_to_strapi(title, author_name, excerpt, content_body, publish_date, link, post_image):
-    # Here you would implement the code to push data to Strapi
-    # You need to construct the payload and make a POST request to the Strapi endpoint
-    # I'll provide a basic example assuming you have a function named `send_to_strapi_api`
     payload = {
         "title": title,
         "author_name": author_name,
@@ -114,14 +121,11 @@ def push_to_strapi(title, author_name, excerpt, content_body, publish_date, link
         "link": link,
         "post_image": post_image
     }
-    # send_to_strapi_api(payload)
     print("Data pushed to Strapi.")
 
-# Example usage after obtaining news_items from `extract_news_links_titles_images`
 news_items = extract_news_links_titles_images("https://www.abc-7.com/local-news")
 extract_article_details(news_items, save_to_strapi=False)
 
-# Function to save HTML content to a file, with news links, titles, and post images at the top
 def save_html(url, page_name):
     try:
         driver.get(url)
@@ -149,7 +153,7 @@ def save_html(url, page_name):
         # Extract article details and save to individual files
         for index, (title, link, post_image) in enumerate(news_items):
             driver.get(link)
-            time.sleep(10)  # Wait for dynamic content
+            time.sleep(10)
 
             # Get the full raw HTML content here
             full_raw_html = driver.page_source
@@ -199,7 +203,8 @@ def save_html(url, page_name):
                 file.write(f"URL: {link}\n")
                 file.write(f"Post Content:\n\n") 
                 file.write(content_body)
-                
+
+            # Save clean html    
                 file.write("\n\n" + "-"*80 + "\n")
                 file.write("CLEAN HTML CONTENT BELOW (No Advertisements)\n")
                 file.write("-"*80 + "\n\n")
@@ -208,12 +213,11 @@ def save_html(url, page_name):
  
 
                
-
+            # Save raw html
                 file.write("\n\n" + "-"*80 + "\n")
                 file.write("RAW HTML CONTENT BELOW\n")
                 file.write("-"*80 + "\n\n")
                 
-                # Writing the raw HTML
                 file.write(full_raw_html)
 
                 print(f"Content for {title} saved to {filename}")
@@ -222,13 +226,13 @@ def save_html(url, page_name):
     except Exception as e:
         print(f"An error occurred: {e}")
 
-# URLs and their corresponding page names
+
 urls = [
     ('https://www.abc-7.com', 'Homepage'),
     ('https://www.abc-7.com/local-news', 'LocalNewsPage')
 ]
 
-# Iterate over URLs and save HTML content
+
 for url, page_name in urls:
     save_html(url, page_name)
 
