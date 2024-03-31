@@ -9,6 +9,9 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException
 from bs4 import BeautifulSoup
+import re
+from urllib.parse import urlparse
+
 
 
 # Set Chrome options
@@ -150,6 +153,35 @@ def save_html(url, page_name):
             file.write(news_items_info + html_content)
         print(f"HTML content saved to {filename}")
 
+       
+        # Extract image URLs from the main page or local news page
+        article_divs = driver.find_elements(By.CSS_SELECTOR, "div.bg-image")
+        image_urls = []
+        for div in article_divs:
+            style_attr = div.get_attribute('style')
+            if style_attr:
+                # Use regex to extract URL from the style attribute
+                match = re.search(r"url\((.*?)\)", style_attr)
+                if match:
+                    image_url = match.group(1)
+                    image_urls.append(image_url)
+
+
+        # Assuming `image_url` contains the URL you've extracted
+        original_image_url = "https://kubrick.htvapps.com/htv-prod-media.s3.amazonaws.com/images/thumbnail-123-1-1-6608832061308.jpg?crop=1.00xw:0.752xh;0,0.0897xh&resize=900:*"
+
+        # Parse the URL
+        parsed_url = urlparse(original_image_url)
+
+        # Reconstruct the URL without the query part
+        clean_image_url = f"{parsed_url.scheme}://{parsed_url.netloc}{parsed_url.path}"
+
+        print(f"Original Image URL: {original_image_url}")
+        print(f"Clean Image URL: {clean_image_url}")
+
+ 
+
+
         # Extract article details and save to individual files
         for index, (title, link, post_image) in enumerate(news_items):
             driver.get(link)
@@ -197,6 +229,7 @@ def save_html(url, page_name):
             filename = f"{index}_{title.replace(' ', '_')}.txt"
             with open(filename, 'w', encoding='utf-8') as file:
                 file.write(f"Title: {title}\n")
+                file.write(f"Image URL: {clean_image_url}\n")
                 file.write(f"Author Name: {author_name}\n")
                 file.write(f"Excerpt: {excerpt}\n")
                 file.write(f"Publish Date: {publish_date}\n")
