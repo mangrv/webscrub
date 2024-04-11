@@ -29,7 +29,7 @@ class DataProcessor:
 
     def transform_article(self, article, index):
         publish_date = self.clean_and_convert_date(article["publish_date"])
-        formatted_publish_date = publish_date.strftime("%Y-%m-%d") 
+        formatted_publish_date = publish_date.isoformat()
 
         return {
             "title": self.clean_text(article["title"]),
