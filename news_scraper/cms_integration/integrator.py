@@ -21,12 +21,14 @@ def post_article(data):
         'Content-Type': 'application/json'
     }
 
-    # Print the keys in the data dictionary
     print(data.keys())
     print(f"Data Keys: {data.keys()}")
 
-    # Check if the required keys are in the data dictionary before trying to access them
+    site_mapping = {"WZVN": "ABC-7", "WBBH": "NBC-2"}
+
     if 'title' in data and 'slug' in data and 'content' in data and 'image_url' in data and 'author' in data and 'site' in data and 'original_url' in data and 'publish_date' in data and 'article_DateTimeStamp' in data:
+        site = site_mapping.get(data['site'].upper(), data['site'])
+
         api_data = {
             'article_title': data['title'],
             'slug': data['slug'],
@@ -34,7 +36,7 @@ def post_article(data):
             'article_scraped_image_url': data['image_url'],
             'article_author': data['author'].strip(),
             'article_is_featured': data['is_featured'],
-            'article_category': data['site'],
+            'article_category': site, 
             'article_source_url': data['original_url'],
             'article_posted_date': data['publish_date'].strip(),
             'article_DateTimeStamp': data['article_DateTimeStamp'],
