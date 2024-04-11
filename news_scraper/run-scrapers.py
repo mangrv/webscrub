@@ -5,17 +5,18 @@ from cms_integration.integrator import post_article
 
 
 def run_scrapers():
-    seen_links = set()
+    nbc2_seen_links = set()
+    abc7_seen_links = set()
     nbc2_base_url = "https://nbc-2.com"
     abc7_base_url = "https://abc7.com"
 
     # NBC2
-    nbc2_homepage_links, seen_links = nbc2_extractor(nbc2_base_url, nbc2_base_url, seen_links)
-    nbc2_localnews_links, seen_links = nbc2_extractor(nbc2_base_url, nbc2_base_url + "/local-news", seen_links)
+    nbc2_homepage_links, nbc2_seen_links = nbc2_extractor(nbc2_base_url, nbc2_base_url, nbc2_seen_links)
+    nbc2_localnews_links, nbc2_seen_links = nbc2_extractor(nbc2_base_url, nbc2_base_url + "/local-news", nbc2_seen_links)
 
     # ABC7
-    abc7_homepage_links, seen_links = abc7_extractor(abc7_base_url, abc7_base_url, seen_links)
-    abc7_localnews_links, seen_links = abc7_extractor(abc7_base_url, abc7_base_url + "/local-news", seen_links)
+    abc7_homepage_links, abc7_seen_links = abc7_extractor(abc7_base_url, abc7_base_url, abc7_seen_links)
+    abc7_localnews_links, abc7_seen_links = abc7_extractor(abc7_base_url, abc7_base_url + "/local-news", abc7_seen_links)
 
     all_links = nbc2_homepage_links + nbc2_localnews_links + abc7_homepage_links + abc7_localnews_links
     raw_data = []
