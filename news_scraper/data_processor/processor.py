@@ -8,8 +8,13 @@ class DataProcessor:
 
     def clean_and_convert_date(self, date_string):
         cleaned_string = date_string.strip().replace('Updated: ', '')
-        date_object = datetime.strptime(cleaned_string, '%I:%M %p %Z %b %d, %Y')
-        return date_object
+        cleaned_string = re.sub(r'\n|\t', '', cleaned_string)  # Remove newline and tab characters
+        cleaned_string = re.sub(r' [A-Z]{3} ', ' ', cleaned_string)  # Remove timezone
+        date_object = datetime.strptime(cleaned_string, '%I:%M %p %b %d, %Y')
+        return date_object  # Return the date as a datetime object
+
+    def format_date_for_strapi(self, date_object):
+        return date_object.isoformat()
 
     def process_data(self):
         print(f"Raw Data: {self.raw_data}")
@@ -30,6 +35,7 @@ class DataProcessor:
     def transform_article(self, article, index):
         publish_date = self.clean_and_convert_date(article["publish_date"])
         formatted_publish_date = publish_date.isoformat()
+        article_DateTimeStamp = self.format_date_for_strapi(publish_date)
 
         return {
             "title": self.clean_text(article["title"]),
@@ -41,7 +47,8 @@ class DataProcessor:
             "slug": self.create_slug(article["title"]),
             "subsection": article["subsection"], 
             "site": article["site"],
-            "is_featured": index == 0
+            "is_featured": index == 0,
+            "article_DateTimeStamp": article_DateTimeStamp
         }
 
     def clean_text(self, text):
