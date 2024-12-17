@@ -21,6 +21,10 @@ Run the following command to install the necessary Python libraries:
 
 pip install requests beautifulsoup4 selenium mysql-connector-python
 
+---OR---
+pip3 install -r requirements.txt
+
+
 #### Note:
 
 If you plan to use Selenium, you will also need to download a WebDriver for the browser you intend to use (e.g., ChromeDriver for Google Chrome, geckodriver for Firefox). Please refer to the Selenium documentation for instructions on installing and setting up WebDriver.
@@ -55,6 +59,44 @@ To run the script, navigate to the project directory and execute the following c
 python main.py
 
 Replace \`main.py\` with the script you wish to run. The script will fetch the latest news articles from NBC2 and display or store them according to the script's functionality.
+
+Docker
+------------
+docker build -t swfl-webscrub .
+docker run -d --name swfl-webscrub swfl-webscrub
+
+check the Dockerfile
+
+Scheduled Service
+------------
+sudo nano /etc/systemd/system/swfl-webscrub.service
+
+```
+[Unit]
+Description=SWFL Webscrub Service
+After=network.target
+
+[Service]
+User=ji
+WorkingDirectory=/mnt/user/websites/swfl.io/scripts/webscrub/news_scraper/scheduler
+ExecStart=/mnt/user/websites/swfl.io/scripts/webscrub/news_scraper/myenv/bin/python /mnt/user/websites/swfl.io/scripts/webscrub/news_scraper/scheduler/scheduler.py
+Restart=always
+Environment="PATH=/mnt/user/websites/swfl.io/scripts/webscrub/news_scraper/myenv/bin"
+
+[Install]
+WantedBy=multi-user.target
+```
+
+Reload systemd and restart the service:
+```
+sudo systemctl daemon-reload
+sudo systemctl restart swfl-webscrub.service
+sudo systemctl status swfl-webscrub.service
+```
+
+
+
+
 
 Contributing
 ------------

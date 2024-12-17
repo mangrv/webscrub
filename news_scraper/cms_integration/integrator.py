@@ -5,7 +5,17 @@ import json
 from dotenv import load_dotenv
 load_dotenv()
 
+# Initialize counters
+files_processed = 0
+articles_posted = 0
+failed_uploads = 0
+
 def post_article(data):
+    global files_processed, articles_posted, failed_uploads
+
+    # Increment files_processed counter
+    files_processed += 1
+
     api_url = os.getenv('STRAPI_API_URL')
     bearer_token = os.getenv('STRAPI_BEARER_TOKEN')
 
@@ -50,10 +60,14 @@ def post_article(data):
         response = requests.post(api_url, headers=headers, json={'data': api_data})
 
         if response.status_code == 201:
+            # Increment articles_posted counter
+            articles_posted += 1
             print('Article posted successfully')
             print(f"Response Status Code: {response.status_code}")
             print(f"Response Text: {response.text}")
         else:
+            # Increment failed_uploads counter
+            failed_uploads += 1
             print('Failed to post article', response.status_code, response.text)
     else:
         print('Missing required keys in data')
